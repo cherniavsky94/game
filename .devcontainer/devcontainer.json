@@ -1,0 +1,35 @@
+{
+	"name": "Isometric RPG Dev Environment",
+	"build": {
+		"context": ".",
+		"dockerfile": "Dockerfile"
+	},
+	"forwardPorts": [3000, 2567],
+	"portsAttributes": {
+		"3000": {
+			"label": "Client (Phaser)",
+			"onAutoForward": "notify"
+		},
+		"2567": {
+			"label": "Server (Colyseus)",
+			"onAutoForward": "notify"
+		}
+	},
+	"postCreateCommand": "npm install",
+	"postStartCommand": "echo '🎮 Isometric RPG Dev Environment Ready! Run: npm run dev'",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"Prisma.prisma",
+				"ms-vscode.vscode-typescript-next"
+			],
+			"settings": {
+				"editor.formatOnSave": true,
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"typescript.tsdk": "node_modules/typescript/lib"
+			}
+		}
+	}
+}
