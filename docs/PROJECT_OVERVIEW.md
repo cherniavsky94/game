@@ -1,3 +1,4 @@
+````markdown
 # Isometric RPG - Project Overview
 
 ## 🎮 What's Been Created
@@ -25,7 +26,8 @@ game/
 │   ├── index.html            # HTML entry point
 │   ├── vite.config.ts        # Vite bundler config
 │   ├── package.json          # Client dependencies
-│   └── .env                  # Client environment variables
+│   
+└── .env                  # Client environment variables
 │
 ├── server/                    # Colyseus Game Server
 │   ├── src/
@@ -35,28 +37,43 @@ game/
 │   │   ├── schemas/
 │   │   │   ├── GameState.ts  # Game state schema
 │   │   │   └── Player.ts     # Player schema
-│   │   └── utils/
+│   │   
+  └── utils/
 │   │       ├── prisma.ts     # Prisma client instance
-│   │       └── supabase.ts   # Supabase server client
+│   │       
+  └── supabase.ts     # Supabase server client
 │   ├── package.json          # Server dependencies
-│   └── .env                  # Server environment variables
+│   
+└── .env                  # Server environment variables
 │
 ├── shared/                    # Shared Code (Client + Server)
 │   ├── src/
 │   │   ├── types/
-│   │   │   └── index.ts      # TypeScript interfaces
+│   │   │   
+  └── index.ts      # TypeScript interfaces
 │   │   ├── constants/
-│   │   │   └── index.ts      # Game constants
-│   │   └── utils/
-│   │       └── index.ts      # Utility functions
-│   └── package.json          # Shared package config
+│   │   │   
+  └── index.ts      # Game constants
+│   │   
+  └── utils/
+│   │       
+      
+  
+  
+  └── index.ts      # Utility functions
+│   
+  └── package.json          # Shared package config
 │
 ├── prisma/
-│   └── schema.prisma         # Database schema (User, Character, Item, Inventory)
+│   
+  
+  └── schema.prisma         # Database schema (User, Character, Item, Inventory)
 │
 ├── .devcontainer/
-│   ├── devcontainer.json     # Dev container configuration
-│   └── Dockerfile            # Container image with Node.js 20
+│   
+  ├── devcontainer.json     # Dev container configuration
+│   
+  └── Dockerfile            # Container image with Node.js 20
 │
 ├── package.json              # Root package (workspaces)
 ├── start-dev.sh              # Convenience startup script
@@ -261,3 +278,5 @@ See `INSTALL.md` for common issues and solutions.
 
 **Status**: ✅ Development environment ready
 **Next**: Rebuild container → Install → Run → Build features!
+
+````

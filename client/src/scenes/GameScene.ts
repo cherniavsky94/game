@@ -74,8 +74,8 @@ MP: ${this.character.mana}/${this.character.maxMana}
     });
 
     button.on('pointerdown', () => {
-      // Go back to character selection
-      window.location.reload();
+      // Go back to character selection scene without reloading the page
+      this.scene.start('CharacterSelectionScene');
     });
   }
 }

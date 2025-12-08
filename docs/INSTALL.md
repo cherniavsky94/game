@@ -1,3 +1,4 @@
+````markdown
 # Installation & First Run
 
 ## Prerequisites
@@ -221,3 +222,5 @@ cd server && npx prisma migrate reset
 5. Start building game features!
 
 See `SETUP.md` for detailed configuration and `README.md` for project overview.
+
+````

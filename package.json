@@ -2,6 +2,7 @@
   "name": "isometric-rpg",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@8.8.0",
   "workspaces": [
     "client",
     "server",
@@ -14,11 +15,15 @@
     "build": "npm run build --workspaces",
     "build:client": "npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
-    "prisma:generate": "npm run prisma:generate --workspace=server",
-    "prisma:migrate": "npm run prisma:migrate --workspace=server",
-    "prisma:studio": "npm run prisma:studio --workspace=server"
+    "prisma:generate": "npm run prisma:generate",
+    "prisma:migrate": "npm run prisma:migrate",
+    "prisma:studio": "npm run prisma:studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "prisma": "^5.22.0"
   }
 }

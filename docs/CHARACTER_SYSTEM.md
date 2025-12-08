@@ -1,3 +1,5 @@
+
+````markdown
 # 🎭 Система персонажей
 
 ## Что реализовано
@@ -79,11 +81,11 @@
 
 1. Просмотр всех созданных персонажей (карточки)
 2. Каждая карточка показывает:
-   - Имя персонажа
-   - Класс
-   - Уровень
-   - HP/MP
-   - Кнопка "Играть"
+	 - Имя персонажа
+	 - Класс
+	 - Уровень
+	 - HP/MP
+	 - Кнопка "Играть"
 3. Нажать "Играть" для входа в игру
 4. Кнопка "+ Создать нового персонажа" (если < 10)
 
@@ -98,31 +100,31 @@
 
 ```prisma
 model Character {
-  id         String        @id @default(uuid())
-  userId     String
-  name       String
-  class      CharacterClass
-  level      Int           @default(1)
-  experience Int           @default(0)
-  health     Int
-  maxHealth  Int
-  mana       Int
-  maxMana    Int
-  x          Float         @default(0)
-  y          Float         @default(0)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+	id         String        @id @default(uuid())
+	userId     String
+	name       String
+	class      CharacterClass
+	level      Int           @default(1)
+	experience Int           @default(0)
+	health     Int
+	maxHealth  Int           @default(100)
+	mana       Int           @default(50)
+	maxMana    Int           @default(50)
+	x          Float         @default(0)
+	y          Float         @default(0)
+	createdAt  DateTime      @default(now())
+	updatedAt  DateTime      @updatedAt
 }
 
 enum CharacterClass {
-  ASSASSIN
-  AMAZON
-  BARBARIAN
-  GUARDIAN
-  WITCH
-  SORCERESS
-  MAGE
-  DRUID
+	ASSASSIN
+	AMAZON
+	BARBARIAN
+	GUARDIAN
+	WITCH
+	SORCERESS
+	MAGE
+	DRUID
 }
 ```
 
@@ -168,8 +170,8 @@ const characters = await service.getCharacters();
 
 // Создать персонажа
 const character = await service.createCharacter({
-  name: 'Герой',
-  class: CharacterClass.BARBARIAN
+	name: 'Герой',
+	class: CharacterClass.BARBARIAN
 });
 ```
 
@@ -231,10 +233,10 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:2567/api/characters
 
 # Создать персонажа
 curl -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Тестовый","class":"BARBARIAN"}' \
-  http://localhost:2567/api/characters
+	-H "Authorization: Bearer $TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"name":"Тестовый","class":"BARBARIAN"}' \
+	http://localhost:2567/api/characters
 ```
 
 ## Следующие шаги
@@ -253,9 +255,9 @@ curl -X POST \
 1. Проверьте, что сервер запущен (порт 2567)
 2. Проверьте консоль браузера на ошибки
 3. Проверьте, что Prisma Client сгенерирован:
-   ```bash
-   npm run prisma:generate
-   ```
+	 ```bash
+	 npm run prisma:generate
+	 ```
 
 ### Ошибка при создании персонажа
 
@@ -273,3 +275,5 @@ npm run prisma:migrate
 ---
 
 **Готово!** Система персонажей полностью работает. 🎭
+
+````

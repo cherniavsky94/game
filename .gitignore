@@ -37,3 +37,22 @@ coverage/
 .cache/
 temp/
 tmp/
+
+# pnpm
+pnpm-lock.yaml
+.pnpm-debug.log
+
+# root package manager
+package-lock.json
+
+# Prisma dev DB
+/prisma/dev.db
+
+# local build artifacts
+/dist
+
+# workspace lock
+/.yarn
+
+# misc
+erase-this-file

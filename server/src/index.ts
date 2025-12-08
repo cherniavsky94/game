@@ -7,6 +7,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { GameRoom } from './rooms/GameRoom';
 import { characterService } from './utils/characterService';
 import { verifyToken } from './utils/supabase';
+import { CHARACTER_CLASSES } from 'shared';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -70,22 +71,31 @@ app.post('/api/characters', authMiddleware, async (req: any, res) => {
       return res.status(400).json({ error: 'Name must be 3-16 characters' });
     }
 
-    const character = await characterService.createCharacter(
-      req.user.id,
-      name,
-      characterClass
-    );
+    // Validate class value
+    if (!(characterClass in CHARACTER_CLASSES)) {
+      return res.status(400).json({ error: 'Invalid character class' });
+    }
 
-    res.json(character);
+    const character = await characterService.createCharacter(req.user.id, name, characterClass);
+    res.status(201).json(character);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    // Map known errors to appropriate status codes
+    const msg = error?.message || 'Unknown error';
+    if (msg.includes('Maximum')) {
+      return res.status(403).json({ error: msg });
+    }
+    if (msg.includes('already exists')) {
+      return res.status(409).json({ error: msg });
+    }
+
+    res.status(400).json({ error: msg });
   }
 });
 
 app.get('/api/characters/:id', authMiddleware, async (req: any, res) => {
   try {
     const character = await characterService.getCharacterById(req.params.id);
-    
+
     if (!character) {
       return res.status(404).json({ error: 'Character not found' });
     }

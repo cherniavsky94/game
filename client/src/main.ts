@@ -2,11 +2,11 @@ import { Game, AUTO } from 'phaser';
 import { GameScene } from './scenes/GameScene';
 import { CharacterSelectionScene } from './scenes/CharacterSelectionScene';
 import { CharacterCreationScene } from './scenes/CharacterCreationScene';
+import { LoadingScene } from './scenes/LoadingScene';
 import { AuthManager } from './utils/AuthManager';
 import { CharacterService } from './utils/CharacterService';
 
 let game: Game | null = null;
-let isLoadingCharacters = false;
 
 const config = {
   type: AUTO,
@@ -14,7 +14,7 @@ const config = {
   height: 720,
   parent: 'game-container',
   backgroundColor: '#2d2d2d',
-  scene: [CharacterSelectionScene, CharacterCreationScene, GameScene],
+  scene: [LoadingScene, CharacterSelectionScene, CharacterCreationScene, GameScene],
   physics: {
     default: 'arcade',
     arcade: {
@@ -24,75 +24,15 @@ const config = {
   },
 };
 
-async function initializeApp() {
-  console.log('🎮 Isometric RPG Client Starting...');
-  
-  const authManager = AuthManager.getInstance();
-  const isAuthenticated = await authManager.initialize();
-
-  if (isAuthenticated) {
-    await loadCharacters();
-  }
-
-  // Listen for successful authentication (only once)
-  window.addEventListener('auth-success', async () => {
-    if (!isLoadingCharacters && !game) {
-      await loadCharacters();
-    }
-  }, { once: false });
-
-  // Listen for character creation
-  window.addEventListener('character-created', async (event: any) => {
-    await handleCharacterCreated(event.detail);
-  });
-}
-
-async function loadCharacters() {
-  if (game || isLoadingCharacters) {
-    console.log('Game already running or loading');
-    return;
-  }
-
-  isLoadingCharacters = true;
-
-  try {
-    console.log('📦 Loading characters...');
-    const characterService = CharacterService.getInstance();
-    const characters = await characterService.getCharacters();
-
-    console.log(`✅ Loaded ${characters.length} characters`);
-
-    // Start game with character selection
-    startGame(characters);
-  } catch (error) {
-    console.error('Failed to load characters:', error);
-    // Start with empty character list
-    startGame([]);
-  } finally {
-    isLoadingCharacters = false;
-  }
-}
-
-function startGame(characters: any[]) {
-  if (game) {
-    return;
-  }
-
+function startGame() {
+  if (game) return;
   console.log('✅ Starting game...');
   game = new Game(config);
-
-  // Make game globally accessible
   (window as any).game = game;
 
-  // Wait for game to be ready, then start appropriate scene
-  game.events.once('ready', () => {
-    if (characters.length === 0) {
-      // No characters, go to creation
-      game!.scene.start('CharacterCreationScene');
-    } else {
-      // Has characters, go to selection
-      game!.scene.start('CharacterSelectionScene', { characters });
-    }
+  // Global listeners
+  window.addEventListener('character-created', async (event: any) => {
+    await handleCharacterCreated(event.detail);
   });
 }
 
@@ -101,12 +41,10 @@ async function handleCharacterCreated(data: any) {
     console.log('Creating character:', data);
     const characterService = CharacterService.getInstance();
     const character = await characterService.createCharacter(data);
-    
     console.log('✅ Character created:', character);
 
-    // Reload characters and restart selection scene
+    // Reload characters and go to selection scene with updated list
     const characters = await characterService.getCharacters();
-    
     if (game) {
       game.scene.start('CharacterSelectionScene', { characters });
     }
@@ -116,5 +54,10 @@ async function handleCharacterCreated(data: any) {
   }
 }
 
-// Start the app
-initializeApp();
+// Initialize auth first, then create game instance (LoadingScene handles loading work)
+(async function bootstrap() {
+  console.log('🎮 Isometric RPG Client Starting...');
+  const authManager = AuthManager.getInstance();
+  await authManager.initialize();
+  startGame();
+})();
