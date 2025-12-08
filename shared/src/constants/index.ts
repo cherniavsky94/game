@@ -90,3 +90,5 @@ export const CHARACTER_CLASSES = {
     color: 0x32cd32,
   },
 } as const;
+
+export * from './rooms';

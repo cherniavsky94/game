@@ -1,3 +1,4 @@
+````markdown
 # Google OAuth Setup
 
 ## Настройка Google OAuth в Supabase
@@ -77,3 +78,5 @@ Redirect URI для Google Console:
 ```
 https://sjhgglntqgeaikpehpbj.supabase.co/auth/v1/callback
 ```
+
+````

@@ -1,6 +1,9 @@
 import { Room, Client } from '@colyseus/core';
 import { GameState } from '../schemas/GameState';
 import { Player } from '../schemas/Player';
+import { characterServiceNew } from '../services/character.service';
+import { authService } from '../services/auth.service';
+import { AppError } from '../types/errors';
 
 export class GameRoom extends Room<GameState> {
   maxClients = 50;
@@ -20,14 +23,47 @@ export class GameRoom extends Room<GameState> {
 
   onJoin(client: Client, options: any) {
     console.log(`Player ${client.sessionId} joined`);
-    
-    const player = new Player();
-    player.id = client.sessionId;
-    player.x = Math.random() * 800;
-    player.y = Math.random() * 600;
-    player.username = options.username || `Player_${client.sessionId.substring(0, 4)}`;
-    
-    this.state.players.set(client.sessionId, player);
+
+    (async () => {
+      try {
+        // If client provided a token and characterId, try to load the character
+        if (options?.token && options?.characterId) {
+          const user = await authService.verifyAndGetUser(options.token);
+          const character = await characterServiceNew.getById(options.characterId);
+
+          if (character.userId !== user.id) {
+            console.warn('Character does not belong to authenticated user:', client.sessionId);
+            client.leave();
+            return;
+          }
+
+          const player = new Player();
+          player.id = client.sessionId;
+          player.x = character.x ?? Math.random() * 800;
+          player.y = character.y ?? Math.random() * 600;
+          player.username = character.name;
+
+          this.state.players.set(client.sessionId, player);
+          return;
+        }
+
+        // Fallback: create a guest player
+        const player = new Player();
+        player.id = client.sessionId;
+        player.x = Math.random() * 800;
+        player.y = Math.random() * 600;
+        player.username = options.username || `Player_${client.sessionId.substring(0, 4)}`;
+
+        this.state.players.set(client.sessionId, player);
+      } catch (err: any) {
+        console.error('Error during onJoin:', err instanceof AppError ? err.message : err);
+        try {
+          client.leave();
+        } catch (_) {
+          // ignore
+        }
+      }
+    })();
   }
 
   onLeave(client: Client, consented: boolean) {

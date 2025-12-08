@@ -1,10 +1,14 @@
 import { Scene } from 'phaser';
-import { CharacterClass, CHARACTER_CLASSES } from 'shared';
+import { CharacterClass, CHARACTER_CLASSES, GAME_CONFIG } from 'shared';
+import { CharacterService } from '../utils/CharacterService';
+import store from '../store';
 
 export class CharacterCreationScene extends Scene {
   private selectedClass: CharacterClass | null = null;
   private characterName: string = '';
   private nameInputElement: HTMLInputElement | null = null;
+  private createButtonObj?: Phaser.GameObjects.Text;
+  private storeUnsub?: () => void;
 
   constructor() {
     super({ key: 'CharacterCreationScene' });
@@ -14,17 +18,21 @@ export class CharacterCreationScene extends Scene {
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
     // Title
-    this.add.text(640, 60, 'Создание персонажа', {
-      fontSize: '36px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
+    this.add
+      .text(640, 60, 'Создание персонажа', {
+        fontSize: '36px',
+        color: '#ffffff',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
 
     // Subtitle
-    this.add.text(640, 110, 'Выберите класс персонажа', {
-      fontSize: '18px',
-      color: '#aaaaaa',
-    }).setOrigin(0.5);
+    this.add
+      .text(640, 110, 'Выберите класс персонажа', {
+        fontSize: '18px',
+        color: '#aaaaaa',
+      })
+      .setOrigin(0.5);
 
     // Create class selection grid
     this.createClassGrid();
@@ -34,6 +42,17 @@ export class CharacterCreationScene extends Scene {
 
     // Create button
     this.createCreateButton();
+
+    // subscribe to store to disable create when at limit
+    this.storeUnsub = store.subscribe((s) => {
+      const atLimit = (s.characters || []).length >= GAME_CONFIG.MAX_CHARACTERS_PER_USER;
+      if (this.createButtonObj) {
+        this.createButtonObj.setText(atLimit ? 'Лимит персонажей достигнут' : 'Создать персонажа');
+        this.createButtonObj.setData('disabled', atLimit);
+        this.createButtonObj.setInteractive(atLimit ? undefined : { useHandCursor: true });
+        this.createButtonObj.setBackgroundColor(atLimit ? '#6c757d' : '#667eea');
+      }
+    });
   }
 
   private createClassGrid() {
@@ -51,14 +70,7 @@ export class CharacterCreationScene extends Scene {
       const x = startX + col * (cardWidth + gap);
       const y = startY + row * (cardHeight + gap);
 
-      this.createClassCard(
-        x,
-        y,
-        cardWidth,
-        cardHeight,
-        classKey as CharacterClass,
-        classData
-      );
+      this.createClassCard(x, y, cardWidth, cardHeight, classKey as CharacterClass, classData);
     });
   }
 
@@ -68,7 +80,7 @@ export class CharacterCreationScene extends Scene {
     width: number,
     height: number,
     classKey: CharacterClass,
-    classData: typeof CHARACTER_CLASSES[keyof typeof CHARACTER_CLASSES]
+    classData: (typeof CHARACTER_CLASSES)[keyof typeof CHARACTER_CLASSES]
   ) {
     const container = this.add.container(x, y);
 
@@ -81,25 +93,31 @@ export class CharacterCreationScene extends Scene {
     const icon = this.add.circle(0, -30, 25, classData.color);
 
     // Class name
-    const nameText = this.add.text(0, 10, classData.name, {
-      fontSize: '18px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
+    const nameText = this.add
+      .text(0, 10, classData.name, {
+        fontSize: '18px',
+        color: '#ffffff',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
 
     // Description
-    const descText = this.add.text(0, 35, classData.description, {
-      fontSize: '12px',
-      color: '#aaaaaa',
-      wordWrap: { width: width - 20 },
-      align: 'center',
-    }).setOrigin(0.5);
+    const descText = this.add
+      .text(0, 35, classData.description, {
+        fontSize: '12px',
+        color: '#aaaaaa',
+        wordWrap: { width: width - 20 },
+        align: 'center',
+      })
+      .setOrigin(0.5);
 
     // Stats
-    const statsText = this.add.text(0, 60, `HP: ${classData.baseHealth} | MP: ${classData.baseMana}`, {
-      fontSize: '11px',
-      color: '#888888',
-    }).setOrigin(0.5);
+    const statsText = this.add
+      .text(0, 60, `HP: ${classData.baseHealth} | MP: ${classData.baseMana}`, {
+        fontSize: '11px',
+        color: '#888888',
+      })
+      .setOrigin(0.5);
 
     container.add([bg, icon, nameText, descText, statsText]);
 
@@ -149,10 +167,12 @@ export class CharacterCreationScene extends Scene {
 
   private createNameInput() {
     // Label
-    this.add.text(640, 500, 'Имя персонажа:', {
-      fontSize: '16px',
-      color: '#ffffff',
-    }).setOrigin(0.5);
+    this.add
+      .text(640, 500, 'Имя персонажа:', {
+        fontSize: '16px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
 
     // Create HTML input
     this.nameInputElement = document.createElement('input');
@@ -195,12 +215,17 @@ export class CharacterCreationScene extends Scene {
   }
 
   private createCreateButton() {
-    const button = this.add.text(640, 600, 'Создать персонажа', {
-      fontSize: '18px',
-      color: '#ffffff',
-      backgroundColor: '#667eea',
-      padding: { x: 30, y: 15 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const button = this.add
+      .text(640, 600, 'Создать персонажа', {
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#667eea',
+        padding: { x: 30, y: 15 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    this.createButtonObj = button;
 
     button.on('pointerover', () => {
       button.setBackgroundColor('#5568d3');
@@ -211,11 +236,13 @@ export class CharacterCreationScene extends Scene {
     });
 
     button.on('pointerdown', () => {
-      this.createCharacter();
+      if (!button.getData('disabled')) {
+        this.createCharacter(button);
+      }
     });
   }
 
-  private async createCharacter() {
+  private async createCharacter(button?: Phaser.GameObjects.Text) {
     if (!this.selectedClass) {
       this.showError('Выберите класс персонажа');
       return;
@@ -232,29 +259,44 @@ export class CharacterCreationScene extends Scene {
     }
 
     try {
-      console.log('Creating character:', this.characterName, this.selectedClass);
-      
-      // Dispatch event with character data
-      window.dispatchEvent(new CustomEvent('character-created', {
-        detail: {
-          name: this.characterName,
-          class: this.selectedClass,
-        },
-      }));
+      if (button) {
+        button.setData('disabled', true);
+        button.setBackgroundColor('#4b57b1');
+      }
 
-      // Clean up
+      const svc = CharacterService.getInstance();
+      const payload = { name: this.characterName, class: this.selectedClass };
+
+      const created = await svc.createCharacter(payload as any);
+      console.log('Character created:', created);
+
+      // Cleanup DOM input
       this.cleanup();
-    } catch (error) {
-      console.error('Character creation error:', error);
-      this.showError('Ошибка создания персонажа');
+
+      // Start game with created character
+      this.scene.start('GameScene', { character: created });
+    } catch (err: any) {
+      console.error('Character creation error:', err);
+      let msg = 'Ошибка создания персонажа';
+      if (err?.message) msg = err.message;
+      // If server returned structured error (e.g., { error: '...' })
+      if (err?.error) msg = err.error;
+      this.showError(msg);
+    } finally {
+      if (button) {
+        button.setData('disabled', false);
+        button.setBackgroundColor('#667eea');
+      }
     }
   }
 
   private showError(message: string) {
-    const errorText = this.add.text(640, 650, message, {
-      fontSize: '14px',
-      color: '#ff6b6b',
-    }).setOrigin(0.5);
+    const errorText = this.add
+      .text(640, 650, message, {
+        fontSize: '14px',
+        color: '#ff6b6b',
+      })
+      .setOrigin(0.5);
 
     this.time.delayedCall(3000, () => {
       errorText.destroy();
@@ -270,5 +312,6 @@ export class CharacterCreationScene extends Scene {
 
   shutdown() {
     this.cleanup();
+    if (this.storeUnsub) this.storeUnsub();
   }
 }

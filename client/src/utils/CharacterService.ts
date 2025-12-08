@@ -1,5 +1,6 @@
-import { CharacterData, CreateCharacterRequest } from 'shared';
+import { CharacterType, CreateCharacterRequest } from 'shared/types';
 import { SupabaseClient } from './SupabaseClient';
+import { store } from '../store';
 
 export class CharacterService {
   private static instance: CharacterService;
@@ -8,19 +9,23 @@ export class CharacterService {
 
   private constructor() {
     this.supabase = SupabaseClient.getInstance();
-    
-    // Determine API URL based on environment
-    if (window.location.hostname.includes('gitpod.dev')) {
-      // Gitpod environment - replace port in URL
+    // Prefer explicit VITE_API_URL (set in client/.env) so CI/dev overrides work
+    const envApi = (import.meta.env as any).VITE_API_URL as string | undefined;
+    if (envApi) {
+      // ensure it ends with /api
+      this.apiUrl = envApi.endsWith('/api') ? envApi : envApi.replace(/\/$/, '') + '/api';
+    } else if (
+      window.location.hostname.includes('gitpod.dev') ||
+      window.location.hostname.includes('gitpod.io')
+    ) {
+      // Gitpod environment - attempt to reach backend via external host
       const baseUrl = window.location.origin;
       this.apiUrl = baseUrl.replace('3000--', '2567--') + '/api';
     } else {
-      // Local development
-      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-      const host = window.location.hostname;
-      this.apiUrl = `${protocol}//${host}:2567/api`;
+      // Use relative path so Vite dev server proxy can forward requests to backend
+      this.apiUrl = '/api';
     }
-    
+
     console.log('API URL:', this.apiUrl);
   }
 
@@ -39,13 +44,13 @@ export class CharacterService {
     return session.access_token;
   }
 
-  async getCharacters(): Promise<CharacterData[]> {
+  async getCharacters(): Promise<CharacterType[]> {
     try {
       const token = await this.getAuthToken();
-      
+
       const response = await fetch(`${this.apiUrl}/characters`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -53,21 +58,24 @@ export class CharacterService {
         throw new Error('Failed to fetch characters');
       }
 
-      return await response.json();
+      const chars = await response.json() as CharacterType[];
+      // update central store
+      store.setCharacters(chars || []);
+      return chars;
     } catch (error) {
       console.error('Get characters error:', error);
       throw error;
     }
   }
 
-  async createCharacter(request: CreateCharacterRequest): Promise<CharacterData> {
+  async createCharacter(request: CreateCharacterRequest): Promise<CharacterType> {
     try {
       const token = await this.getAuthToken();
-      
+
       const response = await fetch(`${this.apiUrl}/characters`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
@@ -78,20 +86,27 @@ export class CharacterService {
         throw new Error(error.error || 'Failed to create character');
       }
 
-      return await response.json();
+      const created = await response.json() as CharacterType;
+      // optimistic update of central store
+      try {
+        store.addCharacter(created);
+      } catch (e) {
+        console.warn('Failed to update store after createCharacter', e);
+      }
+      return created;
     } catch (error) {
       console.error('Create character error:', error);
       throw error;
     }
   }
 
-  async getCharacter(id: string): Promise<CharacterData> {
+  async getCharacter(id: string): Promise<CharacterType> {
     try {
       const token = await this.getAuthToken();
-      
+
       const response = await fetch(`${this.apiUrl}/characters/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -99,7 +114,7 @@ export class CharacterService {
         throw new Error('Failed to fetch character');
       }
 
-      return await response.json();
+      return await response.json() as CharacterType;
     } catch (error) {
       console.error('Get character error:', error);
       throw error;

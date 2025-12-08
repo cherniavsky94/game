@@ -1,34 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
+import type { SupabaseUser } from 'shared/src/supabase/types';
+import { supabaseClient } from '../config/supabase';
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || '';
-
-let supabase: any = null;
-
-if (supabaseUrl && supabaseServiceKey) {
-  supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-} else {
-  console.warn('⚠️ Supabase credentials not configured. Auth features will be disabled.');
-}
-
-export { supabase };
+export { supabaseClient };
 
 export async function verifyToken(token: string) {
-  if (!supabase) {
+  if (!supabaseClient) {
     // For testing without Supabase, return mock user
-    return { id: 'test-user-id', email: 'test@example.com' };
+    return { id: 'test-user-id', email: 'test@example.com' } as SupabaseUser;
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
-  
+  const { data, error } = await supabaseClient.auth.getUser(token);
+
   if (error) {
     throw new Error('Invalid token');
   }
-  
-  return data.user;
+
+  return data.user as SupabaseUser | null;
 }

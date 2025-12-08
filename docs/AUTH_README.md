@@ -1,3 +1,4 @@
+````markdown
 # 🔐 Authentication System
 
 ## Что реализовано
@@ -86,20 +87,20 @@
 
 ```
 1. App Start
-   ↓
+	↓
 2. AuthManager.initialize()
-   ↓
+	↓
 3. Check existing session
-   ↓
+	↓
 4a. Session exists → Start Game
 4b. No session → Show AuthUI
-   ↓
+	↓
 5. User signs in
-   ↓
+	↓
 6. Supabase auth event
-   ↓
+	↓
 7. AuthManager receives event
-   ↓
+	↓
 8. Start Game
 ```
 
@@ -206,3 +207,5 @@ const user = await supabase.getUser();
 ---
 
 **Готово!** Система аутентификации полностью настроена и работает. 🎉
+
+````
