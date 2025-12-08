@@ -1,14 +1,15 @@
 import { Scene } from 'phaser';
-import { CharacterData, CHARACTER_CLASSES } from 'shared';
+import { CHARACTER_CLASSES } from 'shared';
+import { CharacterType } from 'shared/types';
 
 export class GameScene extends Scene {
-  private character!: CharacterData;
+  private character!: CharacterType;
 
   constructor() {
     super({ key: 'GameScene' });
   }
 
-  init(data: { character: CharacterData }) {
+  init(data: { character: CharacterType }) {
     this.character = data.character;
   }
 

@@ -1,5 +1,6 @@
-import { CharacterData, CreateCharacterRequest } from 'shared';
+import { CharacterType, CreateCharacterRequest } from 'shared/types';
 import { SupabaseClient } from './SupabaseClient';
+import { store } from '../store';
 
 export class CharacterService {
   private static instance: CharacterService;
@@ -43,7 +44,7 @@ export class CharacterService {
     return session.access_token;
   }
 
-  async getCharacters(): Promise<CharacterData[]> {
+  async getCharacters(): Promise<CharacterType[]> {
     try {
       const token = await this.getAuthToken();
 
@@ -57,14 +58,17 @@ export class CharacterService {
         throw new Error('Failed to fetch characters');
       }
 
-      return await response.json();
+      const chars = await response.json() as CharacterType[];
+      // update central store
+      store.setCharacters(chars || []);
+      return chars;
     } catch (error) {
       console.error('Get characters error:', error);
       throw error;
     }
   }
 
-  async createCharacter(request: CreateCharacterRequest): Promise<CharacterData> {
+  async createCharacter(request: CreateCharacterRequest): Promise<CharacterType> {
     try {
       const token = await this.getAuthToken();
 
@@ -82,14 +86,21 @@ export class CharacterService {
         throw new Error(error.error || 'Failed to create character');
       }
 
-      return await response.json();
+      const created = await response.json() as CharacterType;
+      // optimistic update of central store
+      try {
+        store.addCharacter(created);
+      } catch (e) {
+        console.warn('Failed to update store after createCharacter', e);
+      }
+      return created;
     } catch (error) {
       console.error('Create character error:', error);
       throw error;
     }
   }
 
-  async getCharacter(id: string): Promise<CharacterData> {
+  async getCharacter(id: string): Promise<CharacterType> {
     try {
       const token = await this.getAuthToken();
 
@@ -103,7 +114,7 @@ export class CharacterService {
         throw new Error('Failed to fetch character');
       }
 
-      return await response.json();
+      return await response.json() as CharacterType;
     } catch (error) {
       console.error('Get character error:', error);
       throw error;

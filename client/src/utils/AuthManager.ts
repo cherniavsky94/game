@@ -1,5 +1,6 @@
 import { SupabaseClient } from './SupabaseClient';
 import { AuthUI } from '../components/AuthUI';
+import { store } from '../store';
 
 export class AuthManager {
   private static instance: AuthManager;
@@ -20,18 +21,23 @@ export class AuthManager {
   }
 
   private setupEventListeners() {
-    window.addEventListener('auth-success', () => {
-      if (!this.isAuthenticated) {
+    window.addEventListener('auth-success', async (ev: any) => {
+      try {
+        const session = ev?.detail;
+        const user = await this.supabase.getUser();
         this.isAuthenticated = true;
-        if (this.authUI) {
-          this.authUI.hide();
-        }
+        if (this.authUI) this.authUI.hide();
+        // update central store
+        store.setUser(user ?? null, session?.access_token ?? null);
         console.log('🎮 User authenticated');
+      } catch (e) {
+        console.error('Error handling auth-success', e);
       }
     });
 
     window.addEventListener('auth-signout', () => {
       this.isAuthenticated = false;
+      store.clearAuth();
       this.showAuthUI();
     });
   }
@@ -41,8 +47,10 @@ export class AuthManager {
       const session = await this.supabase.getSession();
       
       if (session) {
+        const user = await this.supabase.getUser();
         this.isAuthenticated = true;
-        console.log('✅ User already authenticated:', session.user.email);
+        store.setUser(user ?? null, session.access_token ?? null);
+        console.log('✅ User already authenticated:', session.user?.email);
         return true;
       } else {
         this.showAuthUI();
@@ -69,6 +77,7 @@ export class AuthManager {
     try {
       await this.supabase.signOut();
       this.isAuthenticated = false;
+      store.clearAuth();
       this.showAuthUI();
     } catch (error) {
       console.error('Sign out error:', error);
@@ -81,7 +90,10 @@ export class AuthManager {
 
   async getCurrentUser() {
     try {
-      return await this.supabase.getUser();
+      const user = await this.supabase.getUser();
+      // keep store in sync
+      if (user) store.setUser(user);
+      return user;
     } catch (error) {
       console.error('Get user error:', error);
       return null;

@@ -1,18 +1,23 @@
 import { Scene } from 'phaser';
-import { CharacterData, CHARACTER_CLASSES, GAME_CONFIG } from 'shared';
+import { CHARACTER_CLASSES, GAME_CONFIG } from 'shared';
+import { CharacterType } from 'shared/types';
 import { AuthManager } from '../utils/AuthManager';
 import { CharacterService } from '../utils/CharacterService';
+import store, { ClientState } from '../store';
 
 export class CharacterSelectionScene extends Scene {
-  private characters: CharacterData[] = [];
+  private characters: CharacterType[] = [];
   private loadingText?: Phaser.GameObjects.Text;
   private errorText?: Phaser.GameObjects.Text;
+  private storeUnsub?: () => void;
+  private gridContainer?: Phaser.GameObjects.Container;
+  private newButton?: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'CharacterSelectionScene' });
   }
 
-  init(data: { characters: CharacterData[] }) {
+  init(data: { characters: CharacterType[] }) {
     this.characters = data.characters || [];
   }
 
@@ -52,8 +57,47 @@ export class CharacterSelectionScene extends Scene {
     this.createNewCharacterButton();
     this.createSignOutButton();
 
-    // Fetch characters from API and render
-    this.loadCharacters();
+    // Create a container for dynamic grid so we can clear it on updates
+    this.gridContainer = this.add.container(0, 0);
+
+    // Subscribe to store for characters and user updates
+    this.storeUnsub = store.subscribe((s) => {
+      this.characters = s.characters || [];
+
+      // update count
+      const countText = this.children.getByName('character-count') as
+        | Phaser.GameObjects.Text
+        | undefined;
+      if (countText) {
+        countText.setText(
+          `Персонажей: ${this.characters.length}/${GAME_CONFIG.MAX_CHARACTERS_PER_USER}`
+        );
+      }
+
+      // update new button state
+      if (this.newButton) {
+        const atLimit = this.characters.length >= GAME_CONFIG.MAX_CHARACTERS_PER_USER;
+        this.newButton.setText(
+          atLimit ? `Достигнут лимит персонажей (${GAME_CONFIG.MAX_CHARACTERS_PER_USER})` : '+ Создать нового персонажа'
+        );
+        this.newButton.setInteractive(atLimit ? undefined : { useHandCursor: true });
+        this.newButton.setBackgroundColor(atLimit ? '#6c757d' : '#28a745');
+      }
+
+      // remove previous grid children
+      if (this.gridContainer) {
+        this.gridContainer.removeAll(true);
+      }
+
+      // render grid into the grid container
+      this.createCharacterGrid();
+    });
+
+    // Initial load if store empty
+    if ((store.getState().characters || []).length === 0) {
+      this.loadCharacters();
+    }
+    // Fetch characters from API and render (only if needed above)
   }
 
   private async loadCharacters() {
@@ -78,8 +122,7 @@ export class CharacterSelectionScene extends Scene {
         this.loadingText = undefined;
       }
 
-      // Render grid
-      this.createCharacterGrid();
+      // grid will be rendered by store subscription
     } catch (err: any) {
       console.error('Failed to load characters', err);
       if (this.loadingText) {
@@ -139,7 +182,8 @@ export class CharacterSelectionScene extends Scene {
       const x = startX + col * (cardWidth + gap);
       const y = startY + row * (cardHeight + gap);
 
-      this.createCharacterCard(x, y, cardWidth, cardHeight, character);
+      const card = this.createCharacterCard(x, y, cardWidth, cardHeight, character);
+      if (this.gridContainer && card) this.gridContainer.add(card);
     });
   }
 
@@ -148,7 +192,7 @@ export class CharacterSelectionScene extends Scene {
     y: number,
     width: number,
     height: number,
-    character: CharacterData
+    character: CharacterType
   ) {
     const container = this.add.container(x, y);
 
@@ -236,6 +280,8 @@ export class CharacterSelectionScene extends Scene {
     bg.on('pointerout', () => {
       bg.setStrokeStyle(2, 0x444466);
     });
+    // return the container so caller can add to grid container
+    return container;
   }
 
   private createNewCharacterButton() {
@@ -257,6 +303,8 @@ export class CharacterSelectionScene extends Scene {
       .setOrigin(0.5)
       .setInteractive(atLimit ? undefined : { useHandCursor: true });
 
+    this.newButton = button;
+
     button.on('pointerover', () => {
       button.setBackgroundColor('#218838');
     });
@@ -269,6 +317,14 @@ export class CharacterSelectionScene extends Scene {
       if (atLimit) return;
       this.scene.start('CharacterCreationScene');
     });
+  }
+
+  shutdown() {
+    if (this.storeUnsub) this.storeUnsub();
+    if (this.gridContainer) {
+      this.gridContainer.removeAll(true);
+      this.gridContainer.destroy();
+    }
   }
 
   private createSignOutButton() {
@@ -299,9 +355,8 @@ export class CharacterSelectionScene extends Scene {
     });
   }
 
-  private selectCharacter(character: CharacterData) {
+  private selectCharacter(character: CharacterType) {
     console.log('Selected character:', character);
-
     // Dispatch event
     window.dispatchEvent(
       new CustomEvent('character-selected', {

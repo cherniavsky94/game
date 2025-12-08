@@ -1,11 +1,14 @@
 import { Scene } from 'phaser';
-import { CharacterClass, CHARACTER_CLASSES } from 'shared';
+import { CharacterClass, CHARACTER_CLASSES, GAME_CONFIG } from 'shared';
 import { CharacterService } from '../utils/CharacterService';
+import store from '../store';
 
 export class CharacterCreationScene extends Scene {
   private selectedClass: CharacterClass | null = null;
   private characterName: string = '';
   private nameInputElement: HTMLInputElement | null = null;
+  private createButtonObj?: Phaser.GameObjects.Text;
+  private storeUnsub?: () => void;
 
   constructor() {
     super({ key: 'CharacterCreationScene' });
@@ -39,6 +42,17 @@ export class CharacterCreationScene extends Scene {
 
     // Create button
     this.createCreateButton();
+
+    // subscribe to store to disable create when at limit
+    this.storeUnsub = store.subscribe((s) => {
+      const atLimit = (s.characters || []).length >= GAME_CONFIG.MAX_CHARACTERS_PER_USER;
+      if (this.createButtonObj) {
+        this.createButtonObj.setText(atLimit ? 'Лимит персонажей достигнут' : 'Создать персонажа');
+        this.createButtonObj.setData('disabled', atLimit);
+        this.createButtonObj.setInteractive(atLimit ? undefined : { useHandCursor: true });
+        this.createButtonObj.setBackgroundColor(atLimit ? '#6c757d' : '#667eea');
+      }
+    });
   }
 
   private createClassGrid() {
@@ -211,6 +225,8 @@ export class CharacterCreationScene extends Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
+    this.createButtonObj = button;
+
     button.on('pointerover', () => {
       button.setBackgroundColor('#5568d3');
     });
@@ -296,5 +312,6 @@ export class CharacterCreationScene extends Scene {
 
   shutdown() {
     this.cleanup();
+    if (this.storeUnsub) this.storeUnsub();
   }
 }

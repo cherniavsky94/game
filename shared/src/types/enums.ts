@@ -1,0 +1,26 @@
+export enum ItemType {
+  WEAPON = 'WEAPON',
+  ARMOR = 'ARMOR',
+  CONSUMABLE = 'CONSUMABLE',
+  QUEST = 'QUEST',
+  MATERIAL = 'MATERIAL',
+}
+
+export enum Rarity {
+  COMMON = 'COMMON',
+  UNCOMMON = 'UNCOMMON',
+  RARE = 'RARE',
+  EPIC = 'EPIC',
+  LEGENDARY = 'LEGENDARY',
+}
+
+export enum CharacterClass {
+  ASSASSIN = 'ASSASSIN',
+  AMAZON = 'AMAZON',
+  BARBARIAN = 'BARBARIAN',
+  GUARDIAN = 'GUARDIAN',
+  WITCH = 'WITCH',
+  SORCERESS = 'SORCERESS',
+  MAGE = 'MAGE',
+  DRUID = 'DRUID',
+}
